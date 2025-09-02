@@ -1,3 +1,13 @@
+# PyPonger (Version 0.11) (Date: 2025-09-02)
+
+# Dieses Programm steht unter der MIT-Lizenz und darf frei genutzt, kopiert, verändert und weitergegeben werden, 
+# solange in allen Kopien oder abgeleiteten Arbeiten der ursprüngliche Copyright-Hinweis und die Lizenz enthalten sind.  
+# Das Programm wird ohne jegliche Gewährleistung bereitgestellt – ohne Garantie der Funktionsfähigkeit, 
+# Marktreife oder Eignung für einen bestimmten Zweck.  
+
+# Wenn Sie das Programm weiterentwickeln und einen Fork erstellen, wählen Sie bitte einen neuen Namen für Ihr Projekt 
+# und verweisen Sie auf das Originalprojekt.
+
 import pygame
 import sys
 import random
