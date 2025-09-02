@@ -43,9 +43,11 @@ python pyponger.py
 
 ### Team Links (Blau):
 - **Torwart & Stürmer**: **W** (oben) / **S** (unten)
+- **Horizontale Bewegung**: **A** (links) / **D** (rechts)
 
 ### Team Rechts (Rot):
 - **Torwart & Stürmer**: **Pfeiltaste oben** / **Pfeiltaste unten**
+- **Horizontale Bewegung**: **Pfeiltaste links** / **Pfeiltaste rechts**
 
 ### Allgemein:
 - **SPACE**: Spiel starten (im Hauptmenü)
@@ -69,6 +71,9 @@ python pyponger.py
 - ⚽ Gelber Fußball mit schwarzem Muster
 - 📊 Punkteanzeige für beide Teams
 - 🎮 4-Spieler-Steuerung (Torwart + Stürmer pro Team)
+- 🔊 Soundeffekte für Kollisionen und Tore
+- ↔️ Spieler können sich leicht nach links und rechts bewegen
+- 🌱 Streifenmuster auf dem Spielfeld für mehr Atmosphäre
 - 🥅 Torpfosten-Kollision: Ball prallt ab, wenn er nicht ins Tor trifft
 - 🏆 Gewinner-Anzeige und Neustart-Funktion
 

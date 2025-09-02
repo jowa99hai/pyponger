@@ -42,34 +42,37 @@ class Spieler:
         self.spieler_typ = spieler_typ  # 'torwart' oder 'stürmer'
         self.punkte = 0
         self.geschwindigkeit = SPIELER_GESCHWINDIGKEIT
-        
+
+        # Horizontaler Bewegungsbereich abhängig vom Spieler-Typ
+        bewegung = 40 if self.spieler_typ == 'torwart' else 80
+        self.min_x = max(0, x - bewegung)
+        self.max_x = min(BREITE - SPIELER_BREITE, x + bewegung)
+
+        # Stürmer bleiben auf ihrer jeweiligen Spielfeldseite
+        if self.spieler_typ == 'stürmer':
+            if self.steuerung == 'links':
+                self.min_x = max(self.min_x, BREITE // 2 + 10)
+            else:
+                self.max_x = min(self.max_x, BREITE // 2 - SPIELER_BREITE - 10)
+
     def bewegen(self, tasten):
         if self.steuerung == 'links':
-            if self.spieler_typ == 'torwart':
-                # Torwart: W/S
-                if tasten[pygame.K_w] and self.y > 0:
-                    self.y -= self.geschwindigkeit
-                if tasten[pygame.K_s] and self.y < HOEHE - SPIELER_HOEHE:
-                    self.y += self.geschwindigkeit
-            else:  # stürmer
-                # Stürmer: W/S (gleiche Tasten wie Torwart)
-                if tasten[pygame.K_w] and self.y > 0:
-                    self.y -= self.geschwindigkeit
-                if tasten[pygame.K_s] and self.y < HOEHE - SPIELER_HOEHE:
-                    self.y += self.geschwindigkeit
-        else:  # rechts
-            if self.spieler_typ == 'torwart':
-                # Torwart: Pfeiltasten oben/unten
-                if tasten[pygame.K_UP] and self.y > 0:
-                    self.y -= self.geschwindigkeit
-                if tasten[pygame.K_DOWN] and self.y < HOEHE - SPIELER_HOEHE:
-                    self.y += self.geschwindigkeit
-            else:  # stürmer
-                # Stürmer: Pfeiltasten oben/unten
-                if tasten[pygame.K_UP] and self.y > 0:
-                    self.y -= self.geschwindigkeit
-                if tasten[pygame.K_DOWN] and self.y < HOEHE - SPIELER_HOEHE:
-                    self.y += self.geschwindigkeit
+            hoch, runter, links, rechts = (
+                pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d
+            )
+        else:
+            hoch, runter, links, rechts = (
+                pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT
+            )
+
+        if tasten[hoch] and self.y > 0:
+            self.y -= self.geschwindigkeit
+        if tasten[runter] and self.y < HOEHE - SPIELER_HOEHE:
+            self.y += self.geschwindigkeit
+        if tasten[links] and self.x > self.min_x:
+            self.x -= self.geschwindigkeit
+        if tasten[rechts] and self.x < self.max_x:
+            self.x += self.geschwindigkeit
                 
     def zeichnen(self):
         pygame.draw.rect(bildschirm, self.farbe, (self.x, self.y, SPIELER_BREITE, SPIELER_HOEHE))
@@ -81,9 +84,11 @@ class Spieler:
         bildschirm.blit(text, text_rect)
 
 class Ball:
-    def __init__(self):
+    def __init__(self, sound_wand=None, sound_spieler=None):
+        self.sound_wand = sound_wand
+        self.sound_spieler = sound_spieler
         self.reset()
-        
+
     def reset(self):
         self.x = BREITE // 2
         self.y = HOEHE // 2
@@ -96,10 +101,12 @@ class Ball:
     def bewegen(self):
         self.x += self.dx
         self.y += self.dy
-        
+
         # Obere und untere Wand-Kollision
         if self.y <= 0 or self.y >= HOEHE - BALL_GROESSE:
             self.dy = -self.dy
+            if self.sound_wand:
+                self.sound_wand.play()
             
     def kollision_spieler(self, spieler):
         ball_rect = pygame.Rect(self.x, self.y, BALL_GROESSE, BALL_GROESSE)
@@ -119,8 +126,10 @@ class Ball:
                 self.dx = -abs(self.dx)  # Ball nach links abprallen
             else:
                 self.dx = abs(self.dx)   # Ball nach rechts abprallen
-                
+
             self.dy = BALL_GESCHWINDIGKEIT * math.sin(winkel)
+            if self.sound_spieler:
+                self.sound_spieler.play()
             return True
         return False
     
@@ -172,23 +181,30 @@ class Ball:
 
 class Spiel:
     def __init__(self):
+        # Soundeffekte laden
+        self.sound_wand, self.sound_spieler, self.sound_tor = self.soundeffekte_laden()
+
         # 4 Spieler: Torwart und Stürmer für jede Seite
         # Stürmer stehen direkt hinter der Mittellinie im gegnerischen Feld
         self.torwart_links = Spieler(80, HOEHE//2 - SPIELER_HOEHE//2, BLAU, 'links', 'torwart')
         self.stürmer_links = Spieler(BREITE//2 + 50, HOEHE//2 - SPIELER_HOEHE//2, BLAU, 'links', 'stürmer')
         self.torwart_rechts = Spieler(BREITE - 80 - SPIELER_BREITE, HOEHE//2 - SPIELER_HOEHE//2, ROT, 'rechts', 'torwart')
         self.stürmer_rechts = Spieler(BREITE//2 - 50 - SPIELER_BREITE, HOEHE//2 - SPIELER_HOEHE//2, ROT, 'rechts', 'stürmer')
-        self.ball = Ball()
+        self.ball = Ball(self.sound_wand, self.sound_spieler)
         self.spiel_aktiv = True
         self.gewinn_punkte = 5
-        
+
         # Hintergrundmusik laden und abspielen
         self.musik_laden()
         
     def spiel_feld_zeichnen(self):
-        # Hintergrund
-        bildschirm.fill(GRUEN)
-        
+        # Hintergrund mit Streifen
+        hell = GRUEN
+        dunkel = (30, 130, 30)
+        for i in range(0, BREITE, 40):
+            farbe = hell if (i // 40) % 2 == 0 else dunkel
+            pygame.draw.rect(bildschirm, farbe, (i, 0, 40, HOEHE))
+
         # Mittellinie
         pygame.draw.line(bildschirm, WEISS, (BREITE//2, 0), (BREITE//2, HOEHE), 3)
         
@@ -229,10 +245,14 @@ class Spiel:
                 # Tor getroffen!
                 self.torwart_rechts.punkte += 1
                 self.ball.reset()
+                if self.sound_tor:
+                    self.sound_tor.play()
                 return True
             else:
                 # Torpfosten getroffen - Ball prallt ab
                 self.ball.dx = abs(self.ball.dx)
+                if self.sound_wand:
+                    self.sound_wand.play()
                 return False
         # Rechtes Tor
         elif self.ball.x >= BREITE - TOR_BREITE - BALL_GROESSE:
@@ -240,10 +260,14 @@ class Spiel:
                 # Tor getroffen!
                 self.torwart_links.punkte += 1
                 self.ball.reset()
+                if self.sound_tor:
+                    self.sound_tor.play()
                 return True
             else:
                 # Torpfosten getroffen - Ball prallt ab
                 self.ball.dx = -abs(self.ball.dx)
+                if self.sound_wand:
+                    self.sound_wand.play()
                 return False
         return False
     
@@ -253,6 +277,36 @@ class Spiel:
         elif self.torwart_rechts.punkte >= self.gewinn_punkte:
             return "Team Rechts"
         return None
+
+    def soundeffekte_laden(self):
+        """Lädt Soundeffekte für Kollisionen und Tore"""
+
+        def lade(dateien):
+            for datei in dateien:
+                try:
+                    sound = pygame.mixer.Sound(datei)
+                    sound.set_volume(0.5)
+                    return sound
+                except:
+                    continue
+            print(f"Keine Sounddatei gefunden: {', '.join(dateien)}")
+            return None
+
+        sound_wand = lade([
+            "wall.wav",
+            "wall.ogg",
+            "bounce.wav",
+        ])
+        sound_spieler = lade([
+            "player.wav",
+            "hit.wav",
+            "pong.wav",
+        ])
+        sound_tor = lade([
+            "goal.wav",
+            "score.wav",
+        ])
+        return sound_wand, sound_spieler, sound_tor
     
     def musik_laden(self):
         """Lädt und startet die Hintergrundmusik"""
