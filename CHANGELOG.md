@@ -1,5 +1,11 @@
 # PyPonger Changelog
 
+## Version 0.15 (2025-09-05)
+
+### Neue Features
+- Gamepad-Unterstützung mit konfigurierbarem Einstellungsmenü
+- Multiplayer Liga-Modus mit bis zu 16 Spielern, Namenseingabe, 2-minütigen Matches und Bereitschaftsbestätigung
+
 ## Version 0.14 (2025-09-04)
 
 ### Verbesserungen

@@ -3,14 +3,14 @@
 Ein spannendes Fußballspiel, das wie das klassische Pong funktioniert! Spiele gegen einen Freund oder eine einfache KI und versuche, den Ball ins gegnerische Tor zu schießen.
 
 **Entwickelt von Jan Heiko Wohltmann, 2025**  
-**Version 0.14 vom 04.09.2025**
+**Version 0.15 vom 05.09.2025**
 
 ![PyPonger Startscreen](start.jpg)
 
 ## 📋 Projekt-Info
 
 ![Python](https://img.shields.io/badge/Python-3.6+-blue.svg?style=for-the-badge&logo=python&logoColor=white)
-![Version](https://img.shields.io/badge/Version-0.14-green.svg?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-0.15-green.svg?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
 ![Pygame](https://img.shields.io/badge/Pygame-2.5.2-orange.svg?style=for-the-badge)
 
@@ -43,6 +43,8 @@ python pyponger.py
 
 ## Steuerung
 
+Gamepads können im Hauptmenü konfiguriert und zusätzlich zur Tastatur verwendet werden.
+
 ### Einzelspieler (Blau):
 - **Torwart & Stürmer**: **Pfeiltaste oben** / **Pfeiltaste unten**
 - **Horizontale Bewegung**: **Pfeiltaste links** / **Pfeiltaste rechts**
@@ -72,6 +74,13 @@ python pyponger.py
 - Die Ballrichtung wird durch die Trefferposition auf dem Spieler beeinflusst
 - **4 Spieler**: Jedes Team hat einen Torwart und einen Stürmer (Stürmer im gegnerischen Feld)
 
+## Liga-Modus
+
+- Wähle im Hauptmenü den Liga-Modus und lege bis zu 16 Spieler mit Namen an.
+- Die Spieler treten nacheinander in 2-minütigen Matches gegeneinander an.
+- Vor jedem Match müssen beide Spieler ihre Bereitschaft bestätigen.
+- Eine Tabelle hält die Ergebnisse fest.
+
 ## Features
 
 - 🏟️ Realistisches Fußballfeld-Design mit Linien und höheren Toren
@@ -79,6 +88,8 @@ python pyponger.py
 - ⚽ Gelber Fußball mit schwarzem Muster
 - 📊 Punkteanzeige für beide Teams
 - 🎮 4-Spieler-Steuerung (Torwart + Stürmer pro Team)
+- 🎮 Gamepad-Unterstützung mit konfigurierbaren Belegungen
+- 🏆 Multiplayer Liga-Modus mit bis zu 16 Spielern und 2-minütigen Matches
 - 👤 **Einzelspieler-Modus** mit KI-gesteuertem Gegner
 - 🤖 **Verbesserte Torwart-KI** im Einzelspieler-Modus
 - ⚡ **Verbesserte Ballphysik** mit zunehmender Geschwindigkeit
