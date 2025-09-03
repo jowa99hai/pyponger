@@ -1,4 +1,4 @@
-# PyPonger (Version 0.13) (Date: 2025-09-03)
+# PyPonger (Version 0.14) (Date: 2025-09-04)
 
 # Dieses Programm steht unter der MIT-Lizenz und darf frei genutzt, kopiert, verändert und weitergegeben werden, 
 # solange in allen Kopien oder abgeleiteten Arbeiten der ursprüngliche Copyright-Hinweis und die Lizenz enthalten sind.  
@@ -46,11 +46,12 @@ pygame.display.set_caption("PyPonger - Fußball Pong")
 uhr = pygame.time.Clock()
 
 class Spieler:
-    def __init__(self, x, y, farbe, steuerung, spieler_typ):
+    def __init__(self, x, y, farbe, steuerung, spieler_typ, controls=None):
         self.x = x
         self.y = y
         self.farbe = farbe
-        self.steuerung = steuerung  # 'links' oder 'rechts'
+        self.steuerung = steuerung  # 'links' oder 'rechts' - bestimmt Spielfeldseite
+        self.controls = controls if controls else steuerung  # legt Tastenbelegung fest
         self.spieler_typ = spieler_typ  # 'torwart' oder 'stürmer'
         self.punkte = 0
         self.geschwindigkeit = SPIELER_GESCHWINDIGKEIT
@@ -68,7 +69,7 @@ class Spieler:
                 self.max_x = min(self.max_x, BREITE // 2 - SPIELER_BREITE - 10)
 
     def bewegen(self, tasten):
-        if self.steuerung == 'links':
+        if self.controls == 'links':
             hoch, runter, links, rechts = (
                 pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d
             )
@@ -125,10 +126,18 @@ class Ball:
             offset = ((self.y + BALL_GROESSE / 2) - (spieler.y + SPIELER_HOEHE / 2)) / (SPIELER_HOEHE / 2)
             winkel = offset * math.pi/3  # -60° bis +60°
 
-            # Bestimme die Kollisionsrichtung basierend auf Ball-Position relativ zum Spieler
             ball_center_x = self.x + BALL_GROESSE // 2
             spieler_center_x = spieler.x + SPIELER_BREITE // 2
-            richtung = -1 if ball_center_x < spieler_center_x else 1
+
+            hinter_dem_spieler = (
+                (spieler.steuerung == 'rechts' and ball_center_x > spieler_center_x)
+                or (spieler.steuerung == 'links' and ball_center_x < spieler_center_x)
+            )
+
+            if hinter_dem_spieler:
+                richtung = -1 if spieler.steuerung == 'rechts' else 1
+            else:
+                richtung = -1 if ball_center_x < spieler_center_x else 1
 
             # Geschwindigkeit leicht erhöhen bis zum Maximum
             self.speed = min(self.speed * BALL_BESCHLEUNIGUNG, self.max_speed)
@@ -193,10 +202,12 @@ class Spiel:
 
         # 4 Spieler: Torwart und Stürmer für jede Seite
         # Stürmer stehen direkt hinter der Mittellinie im gegnerischen Feld
-        self.torwart_links = Spieler(80, HOEHE//2 - SPIELER_HOEHE//2, BLAU, 'links', 'torwart')
-        self.stürmer_links = Spieler(BREITE//2 + 50, HOEHE//2 - SPIELER_HOEHE//2, BLAU, 'links', 'stürmer')
-        self.torwart_rechts = Spieler(BREITE - 80 - SPIELER_BREITE, HOEHE//2 - SPIELER_HOEHE//2, ROT, 'rechts', 'torwart')
-        self.stürmer_rechts = Spieler(BREITE//2 - 50 - SPIELER_BREITE, HOEHE//2 - SPIELER_HOEHE//2, ROT, 'rechts', 'stürmer')
+        controls_links = 'rechts' if singleplayer else 'links'
+        controls_rechts = 'links' if singleplayer else 'rechts'
+        self.torwart_links = Spieler(80, HOEHE//2 - SPIELER_HOEHE//2, BLAU, 'links', 'torwart', controls_links)
+        self.stürmer_links = Spieler(BREITE//2 + 50, HOEHE//2 - SPIELER_HOEHE//2, BLAU, 'links', 'stürmer', controls_links)
+        self.torwart_rechts = Spieler(BREITE - 80 - SPIELER_BREITE, HOEHE//2 - SPIELER_HOEHE//2, ROT, 'rechts', 'torwart', controls_rechts)
+        self.stürmer_rechts = Spieler(BREITE//2 - 50 - SPIELER_BREITE, HOEHE//2 - SPIELER_HOEHE//2, ROT, 'rechts', 'stürmer', controls_rechts)
         self.ball = Ball(self.sound_wand, self.sound_spieler)
         self.spiel_aktiv = True
         self.gewinn_punkte = 5
@@ -246,6 +257,18 @@ class Spiel:
             spieler.y -= spieler.geschwindigkeit
         elif ziel_y > spieler_center and spieler.y < HOEHE - SPIELER_HOEHE:
             spieler.y += spieler.geschwindigkeit
+
+        if spieler.spieler_typ == 'torwart':
+            if spieler.steuerung == 'rechts':
+                if self.ball.x > spieler.x and spieler.x > spieler.min_x:
+                    spieler.x -= spieler.geschwindigkeit
+                elif self.ball.x < spieler.x and spieler.x < spieler.max_x:
+                    spieler.x += spieler.geschwindigkeit
+            else:
+                if self.ball.x < spieler.x and spieler.x < spieler.max_x:
+                    spieler.x += spieler.geschwindigkeit
+                elif self.ball.x > spieler.x and spieler.x > spieler.min_x:
+                    spieler.x -= spieler.geschwindigkeit
         
     def tor_pruefen(self):
         # Tor-Bereiche definieren
