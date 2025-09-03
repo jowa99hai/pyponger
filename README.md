@@ -3,14 +3,14 @@
 Ein spannendes Fußballspiel, das wie das klassische Pong funktioniert! Spiele gegen einen Freund oder eine einfache KI und versuche, den Ball ins gegnerische Tor zu schießen.
 
 **Entwickelt von Jan Heiko Wohltmann, 2025**  
-**Version 0.15 vom 03.09.2025**
+**Version 0.12 vom 03.09.2025**
 
 ![PyPonger Startscreen](start.jpg)
 
 ## 📋 Projekt-Info
 
 ![Python](https://img.shields.io/badge/Python-3.6+-blue.svg?style=for-the-badge&logo=python&logoColor=white)
-![Version](https://img.shields.io/badge/Version-0.15-green.svg?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-0.12-green.svg?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
 ![Pygame](https://img.shields.io/badge/Pygame-2.5.2-orange.svg?style=for-the-badge)
 
