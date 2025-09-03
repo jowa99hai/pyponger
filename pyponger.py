@@ -86,12 +86,6 @@ class Spieler:
                 
     def zeichnen(self):
         pygame.draw.rect(bildschirm, self.farbe, (self.x, self.y, SPIELER_BREITE, SPIELER_HOEHE))
-        # Spieler-Typ und Punkte anzeigen
-        font = pygame.font.Font(None, 24)
-        typ_text = "T" if self.spieler_typ == 'torwart' else "S"
-        text = font.render(f"{typ_text}{self.punkte}", True, WEISS)
-        text_rect = text.get_rect(center=(self.x + SPIELER_BREITE//2, self.y + SPIELER_HOEHE//2))
-        bildschirm.blit(text, text_rect)
 
 class Ball:
     def __init__(self, sound_wand=None, sound_spieler=None):
