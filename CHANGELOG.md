@@ -1,5 +1,11 @@
 # PyPonger Changelog
 
+## Version 0.14 (2025-09-04)
+
+### Verbesserungen
+- Einzelspieler steuert nun das blaue Team über die Pfeiltasten
+- KI-Torwart bewegt sich intelligenter und verhakt sich nicht mehr mit dem Ball
+
 ## Version 0.13 (2025-09-03)
 
 ### Neue Features

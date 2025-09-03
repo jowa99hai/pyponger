@@ -3,14 +3,14 @@
 Ein spannendes Fußballspiel, das wie das klassische Pong funktioniert! Spiele gegen einen Freund oder eine einfache KI und versuche, den Ball ins gegnerische Tor zu schießen.
 
 **Entwickelt von Jan Heiko Wohltmann, 2025**  
-**Version 0.13 vom 03.09.2025**
+**Version 0.14 vom 04.09.2025**
 
 ![PyPonger Startscreen](start.jpg)
 
 ## 📋 Projekt-Info
 
 ![Python](https://img.shields.io/badge/Python-3.6+-blue.svg?style=for-the-badge&logo=python&logoColor=white)
-![Version](https://img.shields.io/badge/Version-0.13-green.svg?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-0.14-green.svg?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
 ![Pygame](https://img.shields.io/badge/Pygame-2.5.2-orange.svg?style=for-the-badge)
 
@@ -43,11 +43,16 @@ python pyponger.py
 
 ## Steuerung
 
-### Team Links (Blau):
+### Einzelspieler (Blau):
+- **Torwart & Stürmer**: **Pfeiltaste oben** / **Pfeiltaste unten**
+- **Horizontale Bewegung**: **Pfeiltaste links** / **Pfeiltaste rechts**
+
+### Multiplayer:
+**Team Links (Blau):**
 - **Torwart & Stürmer**: **W** (oben) / **S** (unten)
 - **Horizontale Bewegung**: **A** (links) / **D** (rechts)
 
-### Team Rechts (Rot):
+**Team Rechts (Rot):**
 - **Torwart & Stürmer**: **Pfeiltaste oben** / **Pfeiltaste unten**
 - **Horizontale Bewegung**: **Pfeiltaste links** / **Pfeiltaste rechts**
 
@@ -75,6 +80,7 @@ python pyponger.py
 - 📊 Punkteanzeige für beide Teams
 - 🎮 4-Spieler-Steuerung (Torwart + Stürmer pro Team)
 - 👤 **Einzelspieler-Modus** mit KI-gesteuertem Gegner
+- 🤖 **Verbesserte Torwart-KI** im Einzelspieler-Modus
 - ⚡ **Verbesserte Ballphysik** mit zunehmender Geschwindigkeit
 - 🔊 **Vollständiges Sound-System** mit Effekten für Kollisionen und Tore
 - 🎵 **6 verschiedene Sound-Effekte** im `sounds/` Verzeichnis
