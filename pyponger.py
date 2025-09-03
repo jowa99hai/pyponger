@@ -12,10 +12,12 @@ import pygame
 import sys
 import random
 import math
+import itertools
 
 # Pygame initialisieren
 pygame.init()
 pygame.mixer.init()  # Audio-System initialisieren
+pygame.joystick.init()  # Gamepad-Unterstützung initialisieren
 
 # Konstanten
 BREITE = 1200
@@ -45,8 +47,11 @@ bildschirm = pygame.display.set_mode((BREITE, HOEHE))
 pygame.display.set_caption("PyPonger - Fußball Pong")
 uhr = pygame.time.Clock()
 
+# Gamepad-Zuweisungen
+GAMEPADS = {'links': None, 'rechts': None}
+
 class Spieler:
-    def __init__(self, x, y, farbe, steuerung, spieler_typ, controls=None):
+    def __init__(self, x, y, farbe, steuerung, spieler_typ, controls=None, joystick=None):
         self.x = x
         self.y = y
         self.farbe = farbe
@@ -55,6 +60,7 @@ class Spieler:
         self.spieler_typ = spieler_typ  # 'torwart' oder 'stürmer'
         self.punkte = 0
         self.geschwindigkeit = SPIELER_GESCHWINDIGKEIT
+        self.joystick = joystick
 
         # Horizontaler Bewegungsbereich abhängig vom Spieler-Typ
         bewegung = 40 if self.spieler_typ == 'torwart' else 80
@@ -69,6 +75,7 @@ class Spieler:
                 self.max_x = min(self.max_x, BREITE // 2 - SPIELER_BREITE - 10)
 
     def bewegen(self, tasten):
+        # Tastatursteuerung
         if self.controls == 'links':
             hoch, runter, links, rechts = (
                 pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d
@@ -86,6 +93,19 @@ class Spieler:
             self.x -= self.geschwindigkeit
         if tasten[rechts] and self.x < self.max_x:
             self.x += self.geschwindigkeit
+
+        # Gamepad-Steuerung
+        if self.joystick:
+            achse_x = self.joystick.get_axis(0)
+            achse_y = self.joystick.get_axis(1)
+            if achse_y < -0.3 and self.y > 0:
+                self.y -= self.geschwindigkeit
+            if achse_y > 0.3 and self.y < HOEHE - SPIELER_HOEHE:
+                self.y += self.geschwindigkeit
+            if achse_x < -0.3 and self.x > self.min_x:
+                self.x -= self.geschwindigkeit
+            if achse_x > 0.3 and self.x < self.max_x:
+                self.x += self.geschwindigkeit
                 
     def zeichnen(self):
         pygame.draw.rect(bildschirm, self.farbe, (self.x, self.y, SPIELER_BREITE, SPIELER_HOEHE))
@@ -195,8 +215,12 @@ class Ball:
         pygame.draw.circle(bildschirm, SCHWARZ, (center_x + radius//2, center_y + radius//2), 1)
 
 class Spiel:
-    def __init__(self, singleplayer=False):
+    def __init__(self, singleplayer=False, gamepads=None, spieler_links="Team Links", spieler_rechts="Team Rechts", zeit_limit=None):
         self.singleplayer = singleplayer
+        self.gamepads = gamepads or {}
+        self.name_links = spieler_links
+        self.name_rechts = spieler_rechts
+        self.zeit_limit = zeit_limit
         # Soundeffekte laden
         self.sound_wand, self.sound_spieler, self.sound_tor = self.soundeffekte_laden()
 
@@ -204,10 +228,10 @@ class Spiel:
         # Stürmer stehen direkt hinter der Mittellinie im gegnerischen Feld
         controls_links = 'rechts' if singleplayer else 'links'
         controls_rechts = 'links' if singleplayer else 'rechts'
-        self.torwart_links = Spieler(80, HOEHE//2 - SPIELER_HOEHE//2, BLAU, 'links', 'torwart', controls_links)
-        self.stürmer_links = Spieler(BREITE//2 + 50, HOEHE//2 - SPIELER_HOEHE//2, BLAU, 'links', 'stürmer', controls_links)
-        self.torwart_rechts = Spieler(BREITE - 80 - SPIELER_BREITE, HOEHE//2 - SPIELER_HOEHE//2, ROT, 'rechts', 'torwart', controls_rechts)
-        self.stürmer_rechts = Spieler(BREITE//2 - 50 - SPIELER_BREITE, HOEHE//2 - SPIELER_HOEHE//2, ROT, 'rechts', 'stürmer', controls_rechts)
+        self.torwart_links = Spieler(80, HOEHE//2 - SPIELER_HOEHE//2, BLAU, 'links', 'torwart', controls_links, self.gamepads.get('links'))
+        self.stürmer_links = Spieler(BREITE//2 + 50, HOEHE//2 - SPIELER_HOEHE//2, BLAU, 'links', 'stürmer', controls_links, self.gamepads.get('links'))
+        self.torwart_rechts = Spieler(BREITE - 80 - SPIELER_BREITE, HOEHE//2 - SPIELER_HOEHE//2, ROT, 'rechts', 'torwart', controls_rechts, self.gamepads.get('rechts'))
+        self.stürmer_rechts = Spieler(BREITE//2 - 50 - SPIELER_BREITE, HOEHE//2 - SPIELER_HOEHE//2, ROT, 'rechts', 'stürmer', controls_rechts, self.gamepads.get('rechts'))
         self.ball = Ball(self.sound_wand, self.sound_spieler)
         self.spiel_aktiv = True
         self.gewinn_punkte = 5
@@ -390,6 +414,28 @@ class Spiel:
         bildschirm.blit(text_neustart, neustart_rect)
     
     def spiel_ausfuehren(self):
+        # Warten bis beide Spieler bereit sind
+        bereit_links = bereit_rechts = False
+        font = pygame.font.Font(None, 48)
+        while not (bereit_links and bereit_rechts):
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_a:
+                        bereit_links = True
+                    if event.key == pygame.K_l:
+                        bereit_rechts = True
+            bildschirm.fill(SCHWARZ)
+            text = font.render(f"{self.name_links} bereit: {bereit_links} | {self.name_rechts} bereit: {bereit_rechts}", True, WEISS)
+            rect = text.get_rect(center=(BREITE//2, HOEHE//2))
+            bildschirm.blit(text, rect)
+            pygame.display.flip()
+            uhr.tick(60)
+
+        startzeit = pygame.time.get_ticks()
+        gewinner = None
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -397,11 +443,11 @@ class Spiel:
                     sys.exit()
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_r and not self.spiel_aktiv:
-                        self.__init__()  # Spiel zurücksetzen
+                        self.__init__(self.singleplayer, self.gamepads, self.name_links, self.name_rechts, self.zeit_limit)
                     elif event.key == pygame.K_q and not self.spiel_aktiv:
                         pygame.quit()
                         sys.exit()
-            
+
             if self.spiel_aktiv:
                 # Spieler bewegen
                 tasten = pygame.key.get_pressed()
@@ -422,15 +468,26 @@ class Spiel:
                 self.ball.kollision_spieler(self.stürmer_links)
                 self.ball.kollision_spieler(self.torwart_rechts)
                 self.ball.kollision_spieler(self.stürmer_rechts)
-                
+
                 # Tor prüfen
                 self.tor_pruefen()
-                
-                # Gewinner prüfen
-                gewinner = self.gewinner_pruefen()
-                if gewinner:
+
+                # Zeitlimit prüfen
+                if self.zeit_limit and pygame.time.get_ticks() - startzeit > self.zeit_limit * 1000:
                     self.spiel_aktiv = False
-            
+                    if self.torwart_links.punkte > self.torwart_rechts.punkte:
+                        gewinner = "Team Links"
+                    elif self.torwart_rechts.punkte > self.torwart_links.punkte:
+                        gewinner = "Team Rechts"
+                    else:
+                        gewinner = None
+
+                # Gewinner prüfen
+                if self.spiel_aktiv:
+                    gewinner = self.gewinner_pruefen()
+                    if gewinner:
+                        self.spiel_aktiv = False
+
             # Zeichnen
             self.spiel_feld_zeichnen()
             self.torwart_links.zeichnen()
@@ -439,10 +496,13 @@ class Spiel:
             self.stürmer_rechts.zeichnen()
             self.ball.zeichnen()
             self.punkte_anzeigen()
-            
+
             if not self.spiel_aktiv:
                 self.spiel_ende_anzeigen(gewinner)
-            
+                pygame.display.flip()
+                pygame.time.wait(2000)
+                return gewinner
+
             pygame.display.flip()
             uhr.tick(60)
 
@@ -485,9 +545,9 @@ def hauptmenue():
     if not musik_gefunden:
         print("Keine Musikdatei für Hauptmenü gefunden.")
     
-    anleitung = font_klein.render("1: Singleplayer  2: Multiplayer", True, WEISS)
-    steuerung1 = font_klein.render("Links - Torwart & Stürmer: W/S", True, WEISS)
-    steuerung2 = font_klein.render("Rechts - Torwart & Stürmer: Pfeiltasten", True, WEISS)
+    anleitung = font_klein.render("1: Singleplayer  2: Multiplayer  3: Liga  4: Einstellungen", True, WEISS)
+    steuerung1 = font_klein.render("Links - Torwart & Stürmer: W/S oder Gamepad", True, WEISS)
+    steuerung2 = font_klein.render("Rechts - Torwart & Stürmer: Pfeiltasten oder Gamepad", True, WEISS)
     credits = font_credits.render("Von Jan Heiko Wohltmann, 2025 - Version 0.1 vom 31.08.2025", True, WEISS)
 
     anleitung_rect = anleitung.get_rect(center=(BREITE//2, HOEHE//2 + 50))
@@ -512,10 +572,61 @@ def hauptmenue():
                     return "single"
                 elif event.key == pygame.K_2:
                     return "multi"
+                elif event.key == pygame.K_3:
+                    return "liga"
+                elif event.key == pygame.K_4:
+                    gamepad_einstellungen()
         
         uhr.tick(60)
 
+def gamepad_einstellungen():
+    pygame.joystick.quit()
+    pygame.joystick.init()
+    anzahl = pygame.joystick.get_count()
+    pads = [pygame.joystick.Joystick(i) for i in range(anzahl)]
+    for pad in pads:
+        pad.init()
+    print("Verfügbare Gamepads:")
+    for i, pad in enumerate(pads):
+        print(f"{i}: {pad.get_name()}")
+    links = input("Index für Team Links (Enter für keine): ")
+    rechts = input("Index für Team Rechts (Enter für keine): ")
+    if links.isdigit() and int(links) < len(pads):
+        GAMEPADS['links'] = pads[int(links)]
+    if rechts.isdigit() and int(rechts) < len(pads):
+        GAMEPADS['rechts'] = pads[int(rechts)]
+
+def liga_modus():
+    try:
+        anzahl = int(input("Anzahl Spieler (2-16): "))
+    except:
+        return
+    anzahl = max(2, min(16, anzahl))
+    namen = []
+    for i in range(anzahl):
+        name = input(f"Name Spieler {i+1}: ") or f"Spieler{i+1}"
+        namen.append(name)
+    punkte = {n: 0 for n in namen}
+    for p1, p2 in itertools.combinations(namen, 2):
+        print(f"Match: {p1} vs {p2}")
+        spiel = Spiel(singleplayer=False, gamepads=GAMEPADS, spieler_links=p1, spieler_rechts=p2, zeit_limit=120)
+        gewinner = spiel.spiel_ausfuehren()
+        if gewinner == "Team Links":
+            punkte[p1] += 3
+        elif gewinner == "Team Rechts":
+            punkte[p2] += 3
+        else:
+            punkte[p1] += 1
+            punkte[p2] += 1
+        print("Tabelle:")
+        for name, pkt in sorted(punkte.items(), key=lambda x: -x[1]):
+            print(f"{name}: {pkt}")
+    print("Liga beendet!")
+
 if __name__ == "__main__":
     modus = hauptmenue()
-    spiel = Spiel(singleplayer=(modus == "single"))
-    spiel.spiel_ausfuehren()
+    if modus == "liga":
+        liga_modus()
+    else:
+        spiel = Spiel(singleplayer=(modus == "single"), gamepads=GAMEPADS)
+        spiel.spiel_ausfuehren()
