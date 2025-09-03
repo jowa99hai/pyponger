@@ -1,5 +1,11 @@
 # PyPonger Changelog
 
+## Version 0.13 (2025-09-03)
+
+### Neue Features
+- **Einzelspieler-Modus** mit KI-gesteuertem Gegner
+- **Verbesserte Ballphysik** mit steigender Geschwindigkeit nach Treffern
+
 ## Version 0.12 (2025-09-03)
 
 ### Neue Features

@@ -1,16 +1,16 @@
 # PyPonger - Fußball Pong
 
-Ein spannendes Fußballspiel, das wie das klassische Pong funktioniert! Zwei Spieler treten gegeneinander an und versuchen, den Ball ins gegnerische Tor zu schießen.
+Ein spannendes Fußballspiel, das wie das klassische Pong funktioniert! Spiele gegen einen Freund oder eine einfache KI und versuche, den Ball ins gegnerische Tor zu schießen.
 
 **Entwickelt von Jan Heiko Wohltmann, 2025**  
-**Version 0.12 vom 03.09.2025**
+**Version 0.13 vom 03.09.2025**
 
 ![PyPonger Startscreen](start.jpg)
 
 ## 📋 Projekt-Info
 
 ![Python](https://img.shields.io/badge/Python-3.6+-blue.svg?style=for-the-badge&logo=python&logoColor=white)
-![Version](https://img.shields.io/badge/Version-0.12-green.svg?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-0.13-green.svg?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
 ![Pygame](https://img.shields.io/badge/Pygame-2.5.2-orange.svg?style=for-the-badge)
 
@@ -52,7 +52,8 @@ python pyponger.py
 - **Horizontale Bewegung**: **Pfeiltaste links** / **Pfeiltaste rechts**
 
 ### Allgemein:
-- **SPACE**: Spiel starten (im Hauptmenü)
+- **1**: Singleplayer im Hauptmenü
+- **2**: Multiplayer im Hauptmenü
 - **R**: Neustart (nach Spielende)
 - **Q**: Beenden (nach Spielende)
 
@@ -73,6 +74,8 @@ python pyponger.py
 - ⚽ Gelber Fußball mit schwarzem Muster
 - 📊 Punkteanzeige für beide Teams
 - 🎮 4-Spieler-Steuerung (Torwart + Stürmer pro Team)
+- 👤 **Einzelspieler-Modus** mit KI-gesteuertem Gegner
+- ⚡ **Verbesserte Ballphysik** mit zunehmender Geschwindigkeit
 - 🔊 **Vollständiges Sound-System** mit Effekten für Kollisionen und Tore
 - 🎵 **6 verschiedene Sound-Effekte** im `sounds/` Verzeichnis
 - ↔️ Spieler können sich leicht nach links und rechts bewegen

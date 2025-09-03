@@ -1,4 +1,4 @@
-# PyPonger (Version 0.12) (Date: 2025-09-03)
+# PyPonger (Version 0.13) (Date: 2025-09-03)
 
 # Dieses Programm steht unter der MIT-Lizenz und darf frei genutzt, kopiert, verändert und weitergegeben werden, 
 # solange in allen Kopien oder abgeleiteten Arbeiten der ursprüngliche Copyright-Hinweis und die Lizenz enthalten sind.  
@@ -25,6 +25,8 @@ SPIELER_HOEHE = 100
 BALL_GROESSE = 25  # Größerer Ball
 SPIELER_GESCHWINDIGKEIT = 5
 BALL_GESCHWINDIGKEIT = 7
+BALL_MAX_GESCHWINDIGKEIT = 12
+BALL_BESCHLEUNIGUNG = 1.05
 NETZ_BREITE = 4
 NETZ_HOEHE = 300  # Höhere Tore
 TOR_BREITE = 30   # Breite der Torpfosten
@@ -91,16 +93,18 @@ class Ball:
     def __init__(self, sound_wand=None, sound_spieler=None):
         self.sound_wand = sound_wand
         self.sound_spieler = sound_spieler
+        self.max_speed = BALL_MAX_GESCHWINDIGKEIT
         self.reset()
 
     def reset(self):
         self.x = BREITE // 2
         self.y = HOEHE // 2
+        self.speed = BALL_GESCHWINDIGKEIT
         # Zufällige Richtung mit leichtem Winkel
         richtung = random.choice([-1, 1])
         winkel = random.uniform(-math.pi/4, math.pi/4)
-        self.dx = richtung * BALL_GESCHWINDIGKEIT * math.cos(winkel)
-        self.dy = BALL_GESCHWINDIGKEIT * math.sin(winkel)
+        self.dx = richtung * self.speed * math.cos(winkel)
+        self.dy = self.speed * math.sin(winkel)
         
     def bewegen(self):
         self.x += self.dx
@@ -118,20 +122,18 @@ class Ball:
         
         if ball_rect.colliderect(spieler_rect):
             # Ball zurückschlagen mit Winkel basierend auf Trefferposition
-            treffer_position = (self.y - spieler.y) / SPIELER_HOEHE
-            winkel = treffer_position * math.pi/3  # -60° bis +60°
-            
+            offset = ((self.y + BALL_GROESSE / 2) - (spieler.y + SPIELER_HOEHE / 2)) / (SPIELER_HOEHE / 2)
+            winkel = offset * math.pi/3  # -60° bis +60°
+
             # Bestimme die Kollisionsrichtung basierend auf Ball-Position relativ zum Spieler
             ball_center_x = self.x + BALL_GROESSE // 2
             spieler_center_x = spieler.x + SPIELER_BREITE // 2
-            
-            # Wenn Ball von links kommt (auf linke Spieler-Seite)
-            if ball_center_x < spieler_center_x:
-                self.dx = -abs(self.dx)  # Ball nach links abprallen
-            else:
-                self.dx = abs(self.dx)   # Ball nach rechts abprallen
+            richtung = -1 if ball_center_x < spieler_center_x else 1
 
-            self.dy = BALL_GESCHWINDIGKEIT * math.sin(winkel)
+            # Geschwindigkeit leicht erhöhen bis zum Maximum
+            self.speed = min(self.speed * BALL_BESCHLEUNIGUNG, self.max_speed)
+            self.dx = richtung * self.speed * math.cos(winkel)
+            self.dy = self.speed * math.sin(winkel)
             if self.sound_spieler:
                 self.sound_spieler.play()
             return True
@@ -184,7 +186,8 @@ class Ball:
         pygame.draw.circle(bildschirm, SCHWARZ, (center_x + radius//2, center_y + radius//2), 1)
 
 class Spiel:
-    def __init__(self):
+    def __init__(self, singleplayer=False):
+        self.singleplayer = singleplayer
         # Soundeffekte laden
         self.sound_wand, self.sound_spieler, self.sound_tor = self.soundeffekte_laden()
 
@@ -235,6 +238,14 @@ class Spiel:
         
         bildschirm.blit(text_links, (BREITE//4, 50))
         bildschirm.blit(text_rechts, (3*BREITE//4, 50))
+
+    def ai_bewegen(self, spieler):
+        ziel_y = self.ball.y + BALL_GROESSE/2
+        spieler_center = spieler.y + SPIELER_HOEHE/2
+        if ziel_y < spieler_center and spieler.y > 0:
+            spieler.y -= spieler.geschwindigkeit
+        elif ziel_y > spieler_center and spieler.y < HOEHE - SPIELER_HOEHE:
+            spieler.y += spieler.geschwindigkeit
         
     def tor_pruefen(self):
         # Tor-Bereiche definieren
@@ -373,12 +384,16 @@ class Spiel:
                 tasten = pygame.key.get_pressed()
                 self.torwart_links.bewegen(tasten)
                 self.stürmer_links.bewegen(tasten)
-                self.torwart_rechts.bewegen(tasten)
-                self.stürmer_rechts.bewegen(tasten)
-                
+                if self.singleplayer:
+                    self.ai_bewegen(self.torwart_rechts)
+                    self.ai_bewegen(self.stürmer_rechts)
+                else:
+                    self.torwart_rechts.bewegen(tasten)
+                    self.stürmer_rechts.bewegen(tasten)
+
                 # Ball bewegen
                 self.ball.bewegen()
-                
+
                 # Kollisionen prüfen
                 self.ball.kollision_spieler(self.torwart_links)
                 self.ball.kollision_spieler(self.stürmer_links)
@@ -447,16 +462,16 @@ def hauptmenue():
     if not musik_gefunden:
         print("Keine Musikdatei für Hauptmenü gefunden.")
     
-    anleitung = font_klein.render("Drücke SPACE zum Starten", True, WEISS)
+    anleitung = font_klein.render("1: Singleplayer  2: Multiplayer", True, WEISS)
     steuerung1 = font_klein.render("Links - Torwart & Stürmer: W/S", True, WEISS)
-    steuerung2 = font_klein.render("Rechts - Torwart & Stürmer: Pfeiltasten oben/unten", True, WEISS)
+    steuerung2 = font_klein.render("Rechts - Torwart & Stürmer: Pfeiltasten", True, WEISS)
     credits = font_credits.render("Von Jan Heiko Wohltmann, 2025 - Version 0.1 vom 31.08.2025", True, WEISS)
-    
+
     anleitung_rect = anleitung.get_rect(center=(BREITE//2, HOEHE//2 + 50))
     steuerung1_rect = steuerung1.get_rect(center=(BREITE//2, HOEHE//2 + 80))
     steuerung2_rect = steuerung2.get_rect(center=(BREITE//2, HOEHE//2 + 110))
     credits_rect = credits.get_rect(center=(BREITE//2, HOEHE//2 + 160))
-    
+
     bildschirm.blit(anleitung, anleitung_rect)
     bildschirm.blit(steuerung1, steuerung1_rect)
     bildschirm.blit(steuerung2, steuerung2_rect)
@@ -470,12 +485,14 @@ def hauptmenue():
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    return
+                if event.key == pygame.K_1:
+                    return "single"
+                elif event.key == pygame.K_2:
+                    return "multi"
         
         uhr.tick(60)
 
 if __name__ == "__main__":
-    hauptmenue()
-    spiel = Spiel()
+    modus = hauptmenue()
+    spiel = Spiel(singleplayer=(modus == "single"))
     spiel.spiel_ausfuehren()
