@@ -1,4 +1,3 @@
-
 # PyPonger (Version 0.12) (Date: 2025-09-03)
 
 # Dieses Programm steht unter der MIT-Lizenz und darf frei genutzt, kopiert, verändert und weitergegeben werden, 
