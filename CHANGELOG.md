@@ -1,26 +1,14 @@
 # PyPonger Changelog
 
-## Version 0.15 (2025-09-05)
-
-### Neue Features
-- Gamepad-Unterstützung mit konfigurierbarem Einstellungsmenü
-- Multiplayer Liga-Modus mit bis zu 16 Spielern, Namenseingabe, 2-minütigen Matches und Bereitschaftsbestätigung
-
-## Version 0.14 (2025-09-04)
-
-### Verbesserungen
-- Einzelspieler steuert nun das blaue Team über die Pfeiltasten
-- KI-Torwart bewegt sich intelligenter und verhakt sich nicht mehr mit dem Ball
-
-## Version 0.13 (2025-09-03)
-
-### Neue Features
-- **Einzelspieler-Modus** mit KI-gesteuertem Gegner
-- **Verbesserte Ballphysik** mit steigender Geschwindigkeit nach Treffern
-
 ## Version 0.12 (2025-09-03)
 
 ### Neue Features
+- **Gamepad-Unterstützung** mit konfigurierbarem Einstellungsmenü
+- **Multiplayer-Liga-Modus** mit bis zu 16 Spielern, Namenseingabe, 2-minütigen Matches und Bereitschaftsbestätigung
+- **Einzelspieler steuert nun das blaue Team über die Pfeiltasten**
+- **KI-Torwart bewegt sich intelligenter** und verhakt sich nicht mehr mit dem Ball
+- **Einzelspieler-Modus** mit KI-gesteuertem Gegner
+- **Verbesserte Ballphysik** mit steigender Geschwindigkeit nach Treffern
 - **Vollständiges Sound-System hinzugefügt**
   - Ball-Wand-Kollision Sounds (`sounds/wall.wav`, `sounds/bounce.wav`)
   - Ball-Spieler-Kollision Sounds (`sounds/player.wav`, `sounds/hit.wav`)
