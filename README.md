@@ -3,7 +3,7 @@
 Ein spannendes Fußballspiel, das wie das klassische Pong funktioniert! Spiele gegen einen Freund oder eine einfache KI und versuche, den Ball ins gegnerische Tor zu schießen.
 
 **Entwickelt von Jan Heiko Wohltmann, 2025**  
-**Version 0.15 vom 04.09.2025**
+**Version 0.15 vom 03.09.2025**
 
 ![PyPonger Startscreen](start.jpg)
 
