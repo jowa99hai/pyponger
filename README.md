@@ -3,7 +3,7 @@
 Ein spannendes Fußballspiel, das wie das klassische Pong funktioniert! Spiele gegen einen Freund oder eine einfache KI und versuche, den Ball ins gegnerische Tor zu schießen.
 
 **Entwickelt von Jan Heiko Wohltmann, 2025**  
-**Version 0.12 vom 03.09.2025**
+**Version 0.12 vom 04.09.2025**
 
 ![PyPonger Startscreen](start.jpg)
 
@@ -61,6 +61,10 @@ Gamepads können im Hauptmenü konfiguriert und zusätzlich zur Tastatur verwend
 ### Allgemein:
 - **1**: Singleplayer im Hauptmenü
 - **2**: Multiplayer im Hauptmenü
+- **3**: Liga-Modus im Hauptmenü
+- **4**: Gamepad-Einstellungen im Hauptmenü
+- **P**: Pause / Fortsetzen während des Spiels
+- **ESC**: Spiel beenden (mit Sicherheitsabfrage)
 - **R**: Neustart (nach Spielende)
 - **Q**: Beenden (nach Spielende)
 
@@ -92,7 +96,9 @@ Gamepads können im Hauptmenü konfiguriert und zusätzlich zur Tastatur verwend
 - 🏆 Multiplayer Liga-Modus mit bis zu 16 Spielern und 2-minütigen Matches
 - 👤 **Einzelspieler-Modus** mit KI-gesteuertem Gegner
 - 🤖 **Verbesserte Torwart-KI** im Einzelspieler-Modus
-- ⚡ **Verbesserte Ballphysik** mit zunehmender Geschwindigkeit
+- ⚡ **Ultra-robuste Ballphysik** mit zuverlässiger Kollisionserkennung
+- 🔄 **Pause-Funktion** mit P-Taste während des Spiels
+- 🛡️ **Sicherheitsabfrage** beim Beenden mit ESC-Taste
 - 🔊 **Vollständiges Sound-System** mit Effekten für Kollisionen und Tore
 - 🎵 **6 verschiedene Sound-Effekte** im `sounds/` Verzeichnis
 - ↔️ Spieler können sich leicht nach links und rechts bewegen
@@ -100,5 +106,7 @@ Gamepads können im Hauptmenü konfiguriert und zusätzlich zur Tastatur verwend
 - 🥅 Torpfosten-Kollision: Ball prallt ab, wenn er nicht ins Tor trifft
 - 🏆 Gewinner-Anzeige und Neustart-Funktion
 - 🎧 **Hintergrundmusik-Unterstützung** für MP3, WAV und OGG
+- 🎯 **Zuverlässige Kollisionserkennung** für alle Ballrichtungen
+- 🚫 **Kein Durchfliegen** - Ball prallt von allen Seiten der Spieler ab
 
 Viel Spaß beim Spielen! ⚽
