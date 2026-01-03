@@ -2,15 +2,15 @@
 
 Ein spannendes Fußballspiel, das wie das klassische Pong funktioniert! Spiele gegen einen Freund oder eine einfache KI und versuche, den Ball ins gegnerische Tor zu schießen.
 
-**Entwickelt von Jan Heiko Wohltmann, 2025**  
-**Version 0.12 vom 04.09.2025**
+**Entwickelt von Jan Heiko Wohltmann, 2026**  
+**Version 0.13 vom 03.01.2026**
 
 ![PyPonger Startscreen](start.jpg)
 
 ## 📋 Projekt-Info
 
 ![Python](https://img.shields.io/badge/Python-3.6+-blue.svg?style=for-the-badge&logo=python&logoColor=white)
-![Version](https://img.shields.io/badge/Version-0.12-green.svg?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-0.13-green.svg?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
 ![Pygame](https://img.shields.io/badge/Pygame-2.5.2-orange.svg?style=for-the-badge)
 
@@ -43,7 +43,28 @@ python pyponger.py
 
 ## Steuerung
 
-Gamepads können im Hauptmenü konfiguriert und zusätzlich zur Tastatur verwendet werden.
+Gamepads werden beim Start automatisch erkannt und können im Hauptmenü (Option 4) konfiguriert werden. Alle Menüs und Dialoge können vollständig über Gamepad gesteuert werden.
+
+### Gamepad-Steuerung
+
+**Spielerbewegung:**
+- **Joystick-Achsen** oder **D-Pad** = Bewegung in alle Richtungen
+- **Buttons 0-3** = Alternative Bewegung (je nach Gamepad-Layout)
+
+**Menü-Navigation:**
+- **Button 0 (A/X)** = Bestätigen/Auswahl
+- **Button 1 (B/Circle)** = Abbrechen/Beenden
+- **Button 2 (X/Square)** = Alternative Funktionen
+- **Button 3 (Y/Triangle)** = Wechseln (in Einstellungen)
+- **Button 6 (Select/Back)** = ESC-Funktion / Sicherheitsabfrage
+- **Button 7 (Start)** = Pause ein/aus
+- **D-Pad** = Navigation in Menüs
+
+**Hauptmenü:**
+- **Button 0 (A/X)** = Singleplayer
+- **Button 1 (B/Circle)** = Multiplayer
+- **Button 2 (X/Square)** = Liga-Modus
+- **Button 3 (Y/Triangle)** = Einstellungen
 
 ### Einzelspieler (Blau):
 - **Torwart & Stürmer**: **Pfeiltaste oben** / **Pfeiltaste unten**
@@ -92,7 +113,9 @@ Gamepads können im Hauptmenü konfiguriert und zusätzlich zur Tastatur verwend
 - ⚽ Gelber Fußball mit schwarzem Muster
 - 📊 Punkteanzeige für beide Teams
 - 🎮 4-Spieler-Steuerung (Torwart + Stürmer pro Team)
-- 🎮 Gamepad-Unterstützung mit konfigurierbaren Belegungen
+- 🎮 **Vollständige Gamepad-Unterstützung** - Alle Menüs und Dialoge über Gamepad steuerbar
+- 🎮 **Automatische Gamepad-Erkennung** beim Start
+- 🎮 **Erweiterte Gamepad-Funktionen** - Joystick, D-Pad und Buttons unterstützt
 - 🏆 Multiplayer Liga-Modus mit bis zu 16 Spielern und 2-minütigen Matches
 - 👤 **Einzelspieler-Modus** mit KI-gesteuertem Gegner
 - 🤖 **Verbesserte Torwart-KI** im Einzelspieler-Modus
