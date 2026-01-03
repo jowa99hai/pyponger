@@ -1,4 +1,4 @@
-# PyPonger (Version 0.12) (Date: 2025-09-04)
+# PyPonger (Version 0.13) (Date: 2026-01-03)
 
 # Dieses Programm steht unter der MIT-Lizenz und darf frei genutzt, kopiert, verändert und weitergegeben werden, 
 # solange in allen Kopien oder abgeleiteten Arbeiten der ursprüngliche Copyright-Hinweis und die Lizenz enthalten sind.  
@@ -50,6 +50,63 @@ uhr = pygame.time.Clock()
 
 # Gamepad-Zuweisungen
 GAMEPADS = {'links': None, 'rechts': None}
+
+def gamepad_button_gedrueckt(event, button_mapping=None):
+    """
+    Prüft ob ein Gamepad-Button gedrückt wurde.
+    button_mapping: Dict mit Button-Nummern als Keys und Aktionen als Values
+    Gibt (gamepad_index, button_nummer) zurück oder None
+    """
+    if event.type == pygame.JOYBUTTONDOWN:
+        return (event.joy, event.button)
+    return None
+
+def gamepad_hat_bewegung(event):
+    """
+    Prüft ob D-Pad/HAT bewegt wurde.
+    Gibt (gamepad_index, richtung) zurück oder None
+    richtung: (x, y) tuple mit -1, 0, oder 1
+    """
+    if event.type == pygame.JOYHATMOTION:
+        return (event.joy, event.value)
+    return None
+
+def gamepad_achse_bewegung(event, deadzone=0.5):
+    """
+    Prüft ob eine Gamepad-Achse bewegt wurde (für Menü-Navigation).
+    Gibt (gamepad_index, achse, wert) zurück oder None
+    """
+    if event.type == pygame.JOYAXISMOTION:
+        if abs(event.value) > deadzone:
+            return (event.joy, event.axis, event.value)
+    return None
+
+def alle_gamepads_abfragen():
+    """Gibt eine Liste aller initialisierten Gamepads zurück"""
+    gamepads = []
+    for i in range(pygame.joystick.get_count()):
+        try:
+            pad = pygame.joystick.Joystick(i)
+            if pad.get_init():
+                gamepads.append(pad)
+        except:
+            pass
+    return gamepads
+
+def menue_cursor_zeichnen(x, y, groesse=15, farbe=WEISS):
+    """
+    Zeichnet ein nach rechts zeigendes Dreieck als Menü-Cursor
+    x, y: Position (linke Spitze des Dreiecks)
+    groesse: Größe des Dreiecks
+    farbe: Farbe des Dreiecks
+    """
+    # Dreieck nach rechts: drei Punkte
+    punkte = [
+        (x, y),  # Spitze links
+        (x + groesse, y - groesse // 2),  # Oben rechts
+        (x + groesse, y + groesse // 2)   # Unten rechts
+    ]
+    pygame.draw.polygon(bildschirm, farbe, punkte)
 
 def spiel_beenden():
     """Sauberes Beenden des Spiels"""
@@ -116,18 +173,72 @@ class Spieler:
         if tasten[rechts] and self.x < self.max_x:
             self.x += self.geschwindigkeit
 
-        # Gamepad-Steuerung
+        # Gamepad-Steuerung mit Joystick-Achsen und Buttons
         if self.joystick:
+            # Joystick-Achsen (analog)
             achse_x = self.joystick.get_axis(0)
             achse_y = self.joystick.get_axis(1)
-            if achse_y < -0.3 and self.y > 0:
-                self.y -= self.geschwindigkeit
-            if achse_y > 0.3 and self.y < HOEHE - SPIELER_HOEHE:
-                self.y += self.geschwindigkeit
-            if achse_x < -0.3 and self.x > self.min_x:
-                self.x -= self.geschwindigkeit
-            if achse_x > 0.3 and self.x < self.max_x:
-                self.x += self.geschwindigkeit
+            
+            # Deadzone für analoge Sticks (verhindert Drift)
+            deadzone = 0.2
+            
+            # Vertikale Bewegung (Y-Achse)
+            if abs(achse_y) > deadzone:
+                if achse_y < -deadzone and self.y > 0:
+                    self.y -= self.geschwindigkeit
+                if achse_y > deadzone and self.y < HOEHE - SPIELER_HOEHE:
+                    self.y += self.geschwindigkeit
+            
+            # Horizontale Bewegung (X-Achse)
+            if abs(achse_x) > deadzone:
+                if achse_x < -deadzone and self.x > self.min_x:
+                    self.x -= self.geschwindigkeit
+                if achse_x > deadzone and self.x < self.max_x:
+                    self.x += self.geschwindigkeit
+            
+            # D-Pad Unterstützung (HAT)
+            try:
+                hat = self.joystick.get_hat(0)
+                if hat[1] > 0 and self.y < HOEHE - SPIELER_HOEHE:  # D-Pad hoch
+                    self.y += self.geschwindigkeit
+                if hat[1] < 0 and self.y > 0:  # D-Pad runter
+                    self.y -= self.geschwindigkeit
+                if hat[0] < 0 and self.x > self.min_x:  # D-Pad links
+                    self.x -= self.geschwindigkeit
+                if hat[0] > 0 and self.x < self.max_x:  # D-Pad rechts
+                    self.x += self.geschwindigkeit
+            except:
+                pass  # Manche Gamepads haben kein HAT
+            
+            # Button-Unterstützung für Bewegung
+            # Button 0-3: Oben, Rechts, Unten, Links (typische Gamepad-Layouts)
+            try:
+                num_buttons = self.joystick.get_numbuttons()
+                # Button-Mapping variiert je nach Gamepad
+                # Versuche verschiedene Button-Konfigurationen
+                if num_buttons >= 4:
+                    # Typisches Layout: 0=Oben, 1=Rechts, 2=Unten, 3=Links
+                    if self.joystick.get_button(0) and self.y > 0:  # Oben
+                        self.y -= self.geschwindigkeit
+                    if self.joystick.get_button(2) and self.y < HOEHE - SPIELER_HOEHE:  # Unten
+                        self.y += self.geschwindigkeit
+                    if self.joystick.get_button(3) and self.x > self.min_x:  # Links
+                        self.x -= self.geschwindigkeit
+                    if self.joystick.get_button(1) and self.x < self.max_x:  # Rechts
+                        self.x += self.geschwindigkeit
+                
+                # Alternative: Buttons 11-14 (falls vorhanden, z.B. für Xbox-Controller)
+                if num_buttons >= 15:
+                    if self.joystick.get_button(11) and self.y > 0:  # D-Pad oben
+                        self.y -= self.geschwindigkeit
+                    if self.joystick.get_button(13) and self.y < HOEHE - SPIELER_HOEHE:  # D-Pad unten
+                        self.y += self.geschwindigkeit
+                    if self.joystick.get_button(14) and self.x > self.min_x:  # D-Pad links
+                        self.x -= self.geschwindigkeit
+                    if self.joystick.get_button(12) and self.x < self.max_x:  # D-Pad rechts
+                        self.x += self.geschwindigkeit
+            except:
+                pass  # Fehlerbehandlung für Button-Zugriff
                 
     def zeichnen(self):
         pygame.draw.rect(bildschirm, self.farbe, (self.x, self.y, SPIELER_BREITE, SPIELER_HOEHE))
@@ -605,18 +716,35 @@ class Spiel:
             for datei in musik_dateien:
                 print(f"  - {datei}")
     
-    def spiel_ende_anzeigen(self, gewinner):
+    def spiel_ende_anzeigen(self, gewinner, ausgewaehlte_option=0):
         font_gross = pygame.font.Font(None, 74)
         font_klein = pygame.font.Font(None, 36)
         
         text_gewinner = font_gross.render(f"{gewinner} gewinnt!", True, WEISS)
-        text_neustart = font_klein.render("Drücke R für Neustart oder Q zum Beenden", True, WEISS)
         
-        text_rect = text_gewinner.get_rect(center=(BREITE//2, HOEHE//2 - 50))
-        neustart_rect = text_neustart.get_rect(center=(BREITE//2, HOEHE//2 + 50))
+        # Optionen mit Cursor
+        optionen = [
+            ("Neustart", WEISS),
+            ("Beenden", ROT)
+        ]
         
+        text_rect = text_gewinner.get_rect(center=(BREITE//2, HOEHE//2 - 80))
         bildschirm.blit(text_gewinner, text_rect)
-        bildschirm.blit(text_neustart, neustart_rect)
+        
+        # Optionen zeichnen
+        y_start = HOEHE//2 + 20
+        for i, (text, farbe) in enumerate(optionen):
+            if i == ausgewaehlte_option:
+                # Ausgewählte Option hervorheben
+                text_surface = font_klein.render(text, True, GELB)
+                text_rect = text_surface.get_rect(center=(BREITE//2, y_start + i * 50))
+                # Cursor zeichnen
+                menue_cursor_zeichnen(text_rect.left - 40, text_rect.centery, 20, GELB)
+            else:
+                text_surface = font_klein.render(text, True, farbe)
+                text_rect = text_surface.get_rect(center=(BREITE//2, y_start + i * 50))
+            
+            bildschirm.blit(text_surface, text_rect)
     
     def pause_anzeigen(self):
         """Zeigt Pause-Bildschirm an"""
@@ -630,7 +758,7 @@ class Spiel:
         bildschirm.blit(overlay, (0, 0))
         
         text_pause = font_gross.render("PAUSE", True, WEISS)
-        text_anweisung = font_klein.render("Drücke P zum Fortsetzen oder ESC zum Beenden", True, WEISS)
+        text_anweisung = font_klein.render("P oder Start-Button: Fortsetzen  ESC oder Select: Beenden", True, WEISS)
         
         pause_rect = text_pause.get_rect(center=(BREITE//2, HOEHE//2 - 50))
         anweisung_rect = text_anweisung.get_rect(center=(BREITE//2, HOEHE//2 + 50))
@@ -638,7 +766,7 @@ class Spiel:
         bildschirm.blit(text_pause, pause_rect)
         bildschirm.blit(text_anweisung, anweisung_rect)
     
-    def sicherheitsabfrage_anzeigen(self):
+    def sicherheitsabfrage_anzeigen(self, ausgewaehlte_option=0):
         """Zeigt Sicherheitsabfrage für Spielabbruch an"""
         font_gross = pygame.font.Font(None, 48)
         font_klein = pygame.font.Font(None, 36)
@@ -650,19 +778,31 @@ class Spiel:
         bildschirm.blit(overlay, (0, 0))
         
         text_frage = font_gross.render("Spiel wirklich beenden?", True, WEISS)
-        text_ja = font_klein.render("Drücke ESC für JA", True, ROT)
-        text_nein = font_klein.render("Drücke eine andere Taste für NEIN", True, WEISS)
-        text_alt = font_klein.render("Oder drücke Q zum direkten Beenden", True, GELB)
+        
+        # Optionen mit Cursor
+        optionen = [
+            ("JA (Beenden)", ROT),
+            ("NEIN (Abbrechen)", WEISS),
+            ("Direktes Beenden", GELB)
+        ]
         
         frage_rect = text_frage.get_rect(center=(BREITE//2, HOEHE//2 - 100))
-        ja_rect = text_ja.get_rect(center=(BREITE//2, HOEHE//2 - 40))
-        nein_rect = text_nein.get_rect(center=(BREITE//2, HOEHE//2))
-        alt_rect = text_alt.get_rect(center=(BREITE//2, HOEHE//2 + 40))
-        
         bildschirm.blit(text_frage, frage_rect)
-        bildschirm.blit(text_ja, ja_rect)
-        bildschirm.blit(text_nein, nein_rect)
-        bildschirm.blit(text_alt, alt_rect)
+        
+        # Optionen zeichnen
+        y_start = HOEHE//2 - 20
+        for i, (text, farbe) in enumerate(optionen):
+            if i == ausgewaehlte_option:
+                # Ausgewählte Option hervorheben
+                text_surface = font_klein.render(text, True, GELB)
+                text_rect = text_surface.get_rect(center=(BREITE//2, y_start + i * 50))
+                # Cursor zeichnen
+                menue_cursor_zeichnen(text_rect.left - 40, text_rect.centery, 20, GELB)
+            else:
+                text_surface = font_klein.render(text, True, farbe)
+                text_rect = text_surface.get_rect(center=(BREITE//2, y_start + i * 50))
+            
+            bildschirm.blit(text_surface, text_rect)
     
     def spiel_ausfuehren(self):
         # Warten bis beide Spieler bereit sind
@@ -688,6 +828,21 @@ class Spiel:
                     if event.key == pygame.K_SPACE:
                         bereit_links = True
                         bereit_rechts = True
+                
+                # Gamepad-Steuerung für Bereitschaft
+                button_event = gamepad_button_gedrueckt(event)
+                if button_event:
+                    gamepad_index, button = button_event
+                    # Button 0 (A/X) = Bereit für beide
+                    if button == 0:
+                        bereit_links = True
+                        bereit_rechts = True
+                    # Button 1 (B/Circle) = Bereit für Links
+                    elif button == 1:
+                        bereit_links = True
+                    # Button 2 (X/Square) = Bereit für Rechts
+                    elif button == 2:
+                        bereit_rechts = True
             
             # Spielfeld zeichnen
             self.spiel_feld_zeichnen()
@@ -699,9 +854,9 @@ class Spiel:
             
             # Bereitschafts-Text anzeigen
             text_gross = font_gross.render("Bereit zum Spielen?", True, WEISS)
-            text_links = font_klein.render(f"{self.name_links}: Drücke A", True, WEISS)
-            text_rechts = font_klein.render(f"{self.name_rechts}: Drücke L", True, WEISS)
-            text_alt = font_klein.render("Oder drücke LEERTASTE für beide", True, WEISS)
+            text_links = font_klein.render(f"{self.name_links}: Drücke A oder B-Button", True, WEISS)
+            text_rechts = font_klein.render(f"{self.name_rechts}: Drücke L oder X-Button", True, WEISS)
+            text_alt = font_klein.render("LEERTASTE oder A-Button: Beide bereit", True, WEISS)
             
             text_gross_rect = text_gross.get_rect(center=(BREITE//2, HOEHE//2 - 80))
             text_links_rect = text_links.get_rect(center=(BREITE//2, HOEHE//2 - 20))
@@ -727,41 +882,139 @@ class Spiel:
         gewinner = None
         pause_aktiv = False
         sicherheitsabfrage_aktiv = False
+        sicherheitsabfrage_cursor = 0  # 0=JA, 1=NEIN, 2=Direkt
+        spiel_ende_cursor = 0  # 0=Neustart, 1=Beenden
+        letzte_navigation = 0
+        navigation_cooldown = 200
         
         while True:
+            aktuelle_zeit = pygame.time.get_ticks()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     spiel_beenden()
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_r and not self.spiel_aktiv:
-                        self.__init__(self.singleplayer, self.gamepads, self.name_links, self.name_rechts, self.zeit_limit)
-                    elif event.key == pygame.K_q and not self.spiel_aktiv:
-                        spiel_beenden()
-                    elif event.key == pygame.K_p and self.spiel_aktiv and not sicherheitsabfrage_aktiv:
+                    if not self.spiel_aktiv:
+                        # Spiel-Ende Navigation
+                        if event.key == pygame.K_UP:
+                            spiel_ende_cursor = (spiel_ende_cursor - 1) % 2
+                        elif event.key == pygame.K_DOWN:
+                            spiel_ende_cursor = (spiel_ende_cursor + 1) % 2
+                        elif event.key == pygame.K_RETURN or event.key == pygame.K_r:
+                            if spiel_ende_cursor == 0:
+                                self.__init__(self.singleplayer, self.gamepads, self.name_links, self.name_rechts, self.zeit_limit)
+                            else:
+                                spiel_beenden()
+                        elif event.key == pygame.K_q:
+                            spiel_beenden()
+                    elif sicherheitsabfrage_aktiv:
+                        # Sicherheitsabfrage Navigation
+                        if event.key == pygame.K_UP:
+                            sicherheitsabfrage_cursor = (sicherheitsabfrage_cursor - 1) % 3
+                        elif event.key == pygame.K_DOWN:
+                            sicherheitsabfrage_cursor = (sicherheitsabfrage_cursor + 1) % 3
+                        elif event.key == pygame.K_RETURN:
+                            if sicherheitsabfrage_cursor == 0:
+                                spiel_beenden()
+                            elif sicherheitsabfrage_cursor == 1:
+                                sicherheitsabfrage_aktiv = False
+                            else:  # sicherheitsabfrage_cursor == 2
+                                spiel_beenden()
+                        elif event.key == pygame.K_ESCAPE:
+                            if sicherheitsabfrage_cursor == 0:
+                                spiel_beenden()
+                            else:
+                                sicherheitsabfrage_aktiv = False
+                        elif event.key == pygame.K_q:
+                            spiel_beenden()
+                    elif event.key == pygame.K_p and self.spiel_aktiv:
                         # Pause umschalten
                         pause_aktiv = not pause_aktiv
                     elif event.key == pygame.K_ESCAPE:
-                        print(f"ESC gedrückt - Pause: {pause_aktiv}, Sicherheitsabfrage: {sicherheitsabfrage_aktiv}")
                         if pause_aktiv:
-                            # In Pause: Sicherheitsabfrage starten
                             sicherheitsabfrage_aktiv = True
-                            print("Sicherheitsabfrage gestartet")
-                        elif sicherheitsabfrage_aktiv:
-                            # In Sicherheitsabfrage: Spiel beenden
-                            print("Spiel wird beendet (ESC in Sicherheitsabfrage)")
-                            spiel_beenden()
+                            sicherheitsabfrage_cursor = 0
                         else:
-                            # Im Spiel: Pause aktivieren
                             pause_aktiv = True
-                            print("Pause aktiviert")
-                    elif event.key == pygame.K_q and sicherheitsabfrage_aktiv:
-                        # Direktes Beenden mit Q in Sicherheitsabfrage
-                        print("Direktes Beenden mit Q")
-                        spiel_beenden()
-                    elif sicherheitsabfrage_aktiv and event.key != pygame.K_ESCAPE:
-                        # In Sicherheitsabfrage: Andere Taste = Abbrechen
-                        sicherheitsabfrage_aktiv = False
-                        print("Sicherheitsabfrage abgebrochen")
+                
+                # Gamepad-Steuerung für Pause, Sicherheitsabfrage und Spiel-Ende
+                button_event = gamepad_button_gedrueckt(event)
+                if button_event:
+                    gamepad_index, button = button_event
+                    if not self.spiel_aktiv:
+                        # Spiel-Ende Navigation
+                        if button == 0:  # A/X = Bestätigen
+                            if spiel_ende_cursor == 0:
+                                self.__init__(self.singleplayer, self.gamepads, self.name_links, self.name_rechts, self.zeit_limit)
+                            else:
+                                spiel_beenden()
+                        elif button == 1:  # B/Circle = Beenden
+                            spiel_beenden()
+                    elif sicherheitsabfrage_aktiv:
+                        # Sicherheitsabfrage Navigation
+                        if button == 0:  # A/X = Bestätigen
+                            if sicherheitsabfrage_cursor == 0:
+                                spiel_beenden()
+                            elif sicherheitsabfrage_cursor == 1:
+                                sicherheitsabfrage_aktiv = False
+                            else:  # sicherheitsabfrage_cursor == 2
+                                spiel_beenden()
+                        elif button == 1 or button == 6:  # B/Circle oder Select = Abbrechen/Beenden
+                            if sicherheitsabfrage_cursor == 0:
+                                spiel_beenden()
+                            else:
+                                sicherheitsabfrage_aktiv = False
+                        elif button == 2:  # X/Square = Abbrechen
+                            sicherheitsabfrage_aktiv = False
+                    elif button == 7 and self.spiel_aktiv:  # Start = Pause
+                        pause_aktiv = not pause_aktiv
+                    elif button == 6:  # Select = ESC-Funktion
+                        if pause_aktiv:
+                            sicherheitsabfrage_aktiv = True
+                            sicherheitsabfrage_cursor = 0
+                        else:
+                            pause_aktiv = True
+                
+                # D-Pad Navigation für Menüs
+                hat_event = gamepad_hat_bewegung(event)
+                if hat_event and aktuelle_zeit - letzte_navigation > navigation_cooldown:
+                    gamepad_index, (hat_x, hat_y) = hat_event
+                    if not self.spiel_aktiv:
+                        if hat_y < 0:  # D-Pad nach oben
+                            spiel_ende_cursor = (spiel_ende_cursor - 1) % 2
+                            letzte_navigation = aktuelle_zeit
+                        elif hat_y > 0:  # D-Pad nach unten
+                            spiel_ende_cursor = (spiel_ende_cursor + 1) % 2
+                            letzte_navigation = aktuelle_zeit
+                    elif sicherheitsabfrage_aktiv:
+                        if hat_y < 0:  # D-Pad nach oben
+                            sicherheitsabfrage_cursor = (sicherheitsabfrage_cursor - 1) % 3
+                            letzte_navigation = aktuelle_zeit
+                        elif hat_y > 0:  # D-Pad nach unten
+                            sicherheitsabfrage_cursor = (sicherheitsabfrage_cursor + 1) % 3
+                            letzte_navigation = aktuelle_zeit
+                
+                # Joystick-Achsen für Navigation
+                for i in range(pygame.joystick.get_count()):
+                    try:
+                        joystick = pygame.joystick.Joystick(i)
+                        if joystick.get_init() and aktuelle_zeit - letzte_navigation > navigation_cooldown:
+                            achse_y = joystick.get_axis(1)
+                            if not self.spiel_aktiv:
+                                if achse_y < -0.5:  # Joystick nach oben
+                                    spiel_ende_cursor = (spiel_ende_cursor - 1) % 2
+                                    letzte_navigation = aktuelle_zeit
+                                elif achse_y > 0.5:  # Joystick nach unten
+                                    spiel_ende_cursor = (spiel_ende_cursor + 1) % 2
+                                    letzte_navigation = aktuelle_zeit
+                            elif sicherheitsabfrage_aktiv:
+                                if achse_y < -0.5:  # Joystick nach oben
+                                    sicherheitsabfrage_cursor = (sicherheitsabfrage_cursor - 1) % 3
+                                    letzte_navigation = aktuelle_zeit
+                                elif achse_y > 0.5:  # Joystick nach unten
+                                    sicherheitsabfrage_cursor = (sicherheitsabfrage_cursor + 1) % 3
+                                    letzte_navigation = aktuelle_zeit
+                    except:
+                        pass
 
             if self.spiel_aktiv and not pause_aktiv and not sicherheitsabfrage_aktiv:
                 # Spieler bewegen
@@ -816,10 +1069,10 @@ class Spiel:
             if pause_aktiv and not sicherheitsabfrage_aktiv:
                 self.pause_anzeigen()
             elif sicherheitsabfrage_aktiv:
-                self.sicherheitsabfrage_anzeigen()
+                self.sicherheitsabfrage_anzeigen(sicherheitsabfrage_cursor)
 
             if not self.spiel_aktiv:
-                self.spiel_ende_anzeigen(gewinner)
+                self.spiel_ende_anzeigen(gewinner, spiel_ende_cursor)
                 pygame.display.flip()
                 pygame.time.wait(2000)
                 return gewinner
@@ -866,27 +1119,29 @@ def hauptmenue():
     if not musik_gefunden:
         print("Keine Musikdatei für Hauptmenü gefunden.")
     
-    anleitung = font_klein.render("1: Singleplayer  2: Multiplayer  3: Liga  4: Einstellungen", True, WEISS)
-    steuerung1 = font_klein.render("Links - Torwart & Stürmer: W/S oder Gamepad", True, WEISS)
-    steuerung2 = font_klein.render("Rechts - Torwart & Stürmer: Pfeiltasten oder Gamepad", True, WEISS)
+    # Menü-Optionen
+    menue_optionen = [
+        ("Singleplayer", "single"),
+        ("Multiplayer", "multi"),
+        ("Liga", "liga"),
+        ("Einstellungen", "einstellungen")
+    ]
+    ausgewaehlte_option = 0  # Index der ausgewählten Option
+    
+    steuerung1 = font_klein.render("Links - Torwart & Stürmer: W/A/S/D oder Gamepad (Joystick/D-Pad/Buttons)", True, WEISS)
+    steuerung2 = font_klein.render("Rechts - Torwart & Stürmer: Pfeiltasten oder Gamepad (Joystick/D-Pad/Buttons)", True, WEISS)
     steuerung3 = font_klein.render("P: Pause  ESC: Spiel beenden (mit Sicherheitsabfrage)", True, WEISS)
-    credits = font_credits.render("Von Jan Heiko Wohltmann, 2025 - Version 0.1 vom 31.08.2025", True, WEISS)
-
-    anleitung_rect = anleitung.get_rect(center=(BREITE//2, HOEHE//2 + 30))
-    steuerung1_rect = steuerung1.get_rect(center=(BREITE//2, HOEHE//2 + 60))
-    steuerung2_rect = steuerung2.get_rect(center=(BREITE//2, HOEHE//2 + 90))
-    steuerung3_rect = steuerung3.get_rect(center=(BREITE//2, HOEHE//2 + 120))
-    credits_rect = credits.get_rect(center=(BREITE//2, HOEHE//2 + 170))
-
-    bildschirm.blit(anleitung, anleitung_rect)
-    bildschirm.blit(steuerung1, steuerung1_rect)
-    bildschirm.blit(steuerung2, steuerung2_rect)
-    bildschirm.blit(steuerung3, steuerung3_rect)
-    bildschirm.blit(credits, credits_rect)
+    credits = font_credits.render("Von Jan Heiko Wohltmann, 2026 - Version 0.13 vom 03.01.2026", True, WEISS)
     
     pygame.display.flip()
     
+    # Timer für Joystick-Navigation (verhindert zu schnelles Scrollen)
+    letzte_navigation = 0
+    navigation_cooldown = 200  # Millisekunden
+    
     while True:
+        aktuelle_zeit = pygame.time.get_ticks()
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 spiel_beenden()
@@ -899,7 +1154,99 @@ def hauptmenue():
                     return "liga"
                 elif event.key == pygame.K_4:
                     gamepad_einstellungen()
+                elif event.key == pygame.K_UP:
+                    ausgewaehlte_option = (ausgewaehlte_option - 1) % len(menue_optionen)
+                elif event.key == pygame.K_DOWN:
+                    ausgewaehlte_option = (ausgewaehlte_option + 1) % len(menue_optionen)
+                elif event.key == pygame.K_RETURN:
+                    if menue_optionen[ausgewaehlte_option][1] == "einstellungen":
+                        gamepad_einstellungen()
+                    else:
+                        return menue_optionen[ausgewaehlte_option][1]
+            
+            # Gamepad-Steuerung für Hauptmenü
+            button_event = gamepad_button_gedrueckt(event)
+            if button_event:
+                gamepad_index, button = button_event
+                # Button 0 (A/X) = Bestätigen
+                if button == 0:
+                    if menue_optionen[ausgewaehlte_option][1] == "einstellungen":
+                        gamepad_einstellungen()
+                    else:
+                        return menue_optionen[ausgewaehlte_option][1]
+                # Button 1 (B/Circle) = Multiplayer (direkt)
+                elif button == 1:
+                    return "multi"
+                # Button 2 (X/Square) = Liga (direkt)
+                elif button == 2:
+                    return "liga"
+                # Button 3 (Y/Triangle) = Einstellungen (direkt)
+                elif button == 3:
+                    gamepad_einstellungen()
+            
+            # D-Pad Navigation
+            hat_event = gamepad_hat_bewegung(event)
+            if hat_event and aktuelle_zeit - letzte_navigation > navigation_cooldown:
+                gamepad_index, (hat_x, hat_y) = hat_event
+                if hat_y < 0:  # D-Pad nach oben
+                    ausgewaehlte_option = (ausgewaehlte_option - 1) % len(menue_optionen)
+                    letzte_navigation = aktuelle_zeit
+                elif hat_y > 0:  # D-Pad nach unten
+                    ausgewaehlte_option = (ausgewaehlte_option + 1) % len(menue_optionen)
+                    letzte_navigation = aktuelle_zeit
         
+        # Joystick-Achsen für Navigation (kontinuierlich)
+        for i in range(pygame.joystick.get_count()):
+            try:
+                joystick = pygame.joystick.Joystick(i)
+                if joystick.get_init():
+                    achse_y = joystick.get_axis(1)
+                    if aktuelle_zeit - letzte_navigation > navigation_cooldown:
+                        if achse_y < -0.5:  # Joystick nach oben
+                            ausgewaehlte_option = (ausgewaehlte_option - 1) % len(menue_optionen)
+                            letzte_navigation = aktuelle_zeit
+                        elif achse_y > 0.5:  # Joystick nach unten
+                            ausgewaehlte_option = (ausgewaehlte_option + 1) % len(menue_optionen)
+                            letzte_navigation = aktuelle_zeit
+            except:
+                pass
+        
+        # Menü neu zeichnen
+        bildschirm.fill(GRUEN)
+        try:
+            start_bild = pygame.image.load("start.jpg")
+            start_bild = pygame.transform.scale(start_bild, (BREITE, HOEHE))
+            bildschirm.blit(start_bild, (0, 0))
+        except:
+            bildschirm.fill(GRUEN)
+        
+        # Menü-Optionen zeichnen
+        y_start = HOEHE // 2 - 50
+        for i, (text, _) in enumerate(menue_optionen):
+            if i == ausgewaehlte_option:
+                # Ausgewählte Option hervorheben
+                text_surface = font_klein.render(text, True, GELB)
+                # Cursor zeichnen
+                text_rect = text_surface.get_rect(center=(BREITE//2, y_start + i * 50))
+                menue_cursor_zeichnen(text_rect.left - 40, text_rect.centery, 20, GELB)
+            else:
+                text_surface = font_klein.render(text, True, WEISS)
+            
+            text_rect = text_surface.get_rect(center=(BREITE//2, y_start + i * 50))
+            bildschirm.blit(text_surface, text_rect)
+        
+        # Steuerungshinweise
+        steuerung1_rect = steuerung1.get_rect(center=(BREITE//2, HOEHE//2 + 120))
+        steuerung2_rect = steuerung2.get_rect(center=(BREITE//2, HOEHE//2 + 150))
+        steuerung3_rect = steuerung3.get_rect(center=(BREITE//2, HOEHE//2 + 180))
+        credits_rect = credits.get_rect(center=(BREITE//2, HOEHE//2 + 230))
+        
+        bildschirm.blit(steuerung1, steuerung1_rect)
+        bildschirm.blit(steuerung2, steuerung2_rect)
+        bildschirm.blit(steuerung3, steuerung3_rect)
+        bildschirm.blit(credits, credits_rect)
+        
+        pygame.display.flip()
         uhr.tick(60)
 
 def gamepad_einstellungen():
@@ -913,6 +1260,8 @@ def gamepad_einstellungen():
     
     if anzahl == 0:
         gamepad_keine_anzeigen()
+        # Nach dem Anzeigen der Meldung Gamepads neu erkennen
+        gamepads_automatisch_erkennen()
         return
     
     links_index = -1
@@ -951,6 +1300,44 @@ def gamepad_einstellungen():
                         rechts_index += 1
                 elif event.key == pygame.K_TAB:
                     # Zwischen Links und Rechts wechseln
+                    aktueller_auswahl = "rechts" if aktueller_auswahl == "links" else "links"
+            
+            # Gamepad-Steuerung für Einstellungen
+            button_event = gamepad_button_gedrueckt(event)
+            if button_event:
+                gamepad_index, button = button_event
+                # Button 0 (A/X) = Bestätigen
+                if button == 0:
+                    if aktueller_auswahl == "links":
+                        if links_index >= 0:
+                            GAMEPADS['links'] = pads[links_index]
+                        aktueller_auswahl = "rechts"
+                    else:
+                        if rechts_index >= 0:
+                            GAMEPADS['rechts'] = pads[rechts_index]
+                        return
+                # Button 1 (B/Circle) oder 6 (Select) = Abbrechen
+                elif button == 1 or button == 6:
+                    return
+                # Button 3 (Y/Triangle) = Zwischen Links und Rechts wechseln
+                elif button == 3:
+                    aktueller_auswahl = "rechts" if aktueller_auswahl == "links" else "links"
+            
+            # D-Pad Navigation
+            hat_event = gamepad_hat_bewegung(event)
+            if hat_event:
+                gamepad_index, (hat_x, hat_y) = hat_event
+                if hat_y > 0:  # D-Pad nach oben
+                    if aktueller_auswahl == "links" and links_index > -1:
+                        links_index -= 1
+                    elif aktueller_auswahl == "rechts" and rechts_index > -1:
+                        rechts_index -= 1
+                elif hat_y < 0:  # D-Pad nach unten
+                    if aktueller_auswahl == "links" and links_index < anzahl - 1:
+                        links_index += 1
+                    elif aktueller_auswahl == "rechts" and rechts_index < anzahl - 1:
+                        rechts_index += 1
+                elif hat_x != 0:  # D-Pad links/rechts = Wechseln zwischen Links/Rechts
                     aktueller_auswahl = "rechts" if aktueller_auswahl == "links" else "links"
         
         # Zeichnen
@@ -994,7 +1381,7 @@ def gamepad_einstellungen():
         bildschirm.blit(text_rechts, rechts_rect)
         
         # Steuerung anzeigen
-        text_steuerung = font_klein.render("Pfeiltasten: Auswählen  ENTER: Bestätigen  TAB: Wechseln  ESC: Abbrechen", True, WEISS)
+        text_steuerung = font_klein.render("Pfeiltasten/D-Pad: Auswählen  ENTER/A-Button: Bestätigen  TAB/Y-Button: Wechseln  ESC/B-Button: Abbrechen", True, WEISS)
         steuerung_rect = text_steuerung.get_rect(center=(BREITE//2, HOEHE - 50))
         bildschirm.blit(text_steuerung, steuerung_rect)
         
@@ -1009,7 +1396,7 @@ def gamepad_keine_anzeigen():
     bildschirm.fill(SCHWARZ)
     
     text_keine = font_gross.render("Keine Gamepads gefunden!", True, WEISS)
-    text_anweisung = font_klein.render("Drücke ENTER zum Fortfahren", True, WEISS)
+    text_anweisung = font_klein.render("ENTER oder A-Button: Fortfahren", True, WEISS)
     
     keine_rect = text_keine.get_rect(center=(BREITE//2, HOEHE//2 - 50))
     anweisung_rect = text_anweisung.get_rect(center=(BREITE//2, HOEHE//2 + 50))
@@ -1019,13 +1406,20 @@ def gamepad_keine_anzeigen():
     
     pygame.display.flip()
     
-    # Warten auf ENTER
+    # Warten auf ENTER oder Gamepad
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 spiel_beenden()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
+                    return
+            
+            # Gamepad-Steuerung (falls doch ein Gamepad vorhanden ist)
+            button_event = gamepad_button_gedrueckt(event)
+            if button_event:
+                gamepad_index, button = button_event
+                if button == 0:  # A/X = Fortfahren
                     return
         uhr.tick(60)
 
@@ -1084,6 +1478,23 @@ def liga_anzahl_eingeben():
                     anzahl += 1
                 elif event.key == pygame.K_DOWN and anzahl > 2:
                     anzahl -= 1
+            
+            # Gamepad-Steuerung
+            button_event = gamepad_button_gedrueckt(event)
+            if button_event:
+                gamepad_index, button = button_event
+                if button == 0:  # A/X = Bestätigen
+                    eingabe_aktiv = False
+                elif button == 1 or button == 6:  # B/Circle oder Select = Abbrechen
+                    return None
+            
+            hat_event = gamepad_hat_bewegung(event)
+            if hat_event:
+                gamepad_index, (hat_x, hat_y) = hat_event
+                if hat_y < 0 and anzahl < 16:  # D-Pad nach oben
+                    anzahl += 1
+                elif hat_y > 0 and anzahl > 2:  # D-Pad nach unten
+                    anzahl -= 1
         
         # Zeichnen
         bildschirm.fill(SCHWARZ)
@@ -1091,7 +1502,7 @@ def liga_anzahl_eingeben():
         text_titel = font_gross.render("Liga-Modus", True, WEISS)
         text_anweisung = font_klein.render("Anzahl Spieler (2-16):", True, WEISS)
         text_anzahl = font_gross.render(str(anzahl), True, GELB)
-        text_steuerung = font_klein.render("Pfeiltasten: Ändern  ENTER: Bestätigen  ESC: Abbrechen", True, WEISS)
+        text_steuerung = font_klein.render("Pfeiltasten/D-Pad: Ändern  ENTER/A-Button: Bestätigen  ESC/B-Button: Abbrechen", True, WEISS)
         
         titel_rect = text_titel.get_rect(center=(BREITE//2, HOEHE//2 - 100))
         anweisung_rect = text_anweisung.get_rect(center=(BREITE//2, HOEHE//2 - 30))
@@ -1134,6 +1545,17 @@ def liga_namen_eingeben(anzahl):
                         name = name[:-1]
                     elif event.unicode.isprintable() and len(name) < 20:
                         name += event.unicode
+                
+                # Gamepad-Steuerung (nur für Bestätigen/Abbrechen, Text-Eingabe bleibt Tastatur)
+                button_event = gamepad_button_gedrueckt(event)
+                if button_event:
+                    gamepad_index, button = button_event
+                    if button == 0 and name.strip():  # A/X = Bestätigen
+                        namen.append(name)
+                        aktueller_spieler += 1
+                        eingabe_aktiv = False
+                    elif button == 1 or button == 6:  # B/Circle oder Select = Abbrechen
+                        return None
             
             # Zeichnen
             bildschirm.fill(SCHWARZ)
@@ -1141,7 +1563,7 @@ def liga_namen_eingeben(anzahl):
             text_titel = font_gross.render(f"Spieler {aktueller_spieler + 1} von {anzahl}", True, WEISS)
             text_anweisung = font_klein.render("Name eingeben:", True, WEISS)
             text_name = font_gross.render(name + "|", True, GELB)
-            text_steuerung = font_klein.render("ENTER: Bestätigen  ESC: Abbrechen", True, WEISS)
+            text_steuerung = font_klein.render("ENTER/A-Button: Bestätigen  ESC/B-Button: Abbrechen", True, WEISS)
             
             titel_rect = text_titel.get_rect(center=(BREITE//2, HOEHE//2 - 100))
             anweisung_rect = text_anweisung.get_rect(center=(BREITE//2, HOEHE//2 - 30))
@@ -1166,7 +1588,7 @@ def match_info_anzeigen(p1, p2):
     bildschirm.fill(SCHWARZ)
     
     text_match = font_gross.render(f"Match: {p1} vs {p2}", True, WEISS)
-    text_anweisung = font_klein.render("Drücke ENTER zum Starten", True, WEISS)
+    text_anweisung = font_klein.render("ENTER oder A-Button: Starten  ESC oder B-Button: Abbrechen", True, WEISS)
     
     match_rect = text_match.get_rect(center=(BREITE//2, HOEHE//2 - 50))
     anweisung_rect = text_anweisung.get_rect(center=(BREITE//2, HOEHE//2 + 50))
@@ -1176,7 +1598,7 @@ def match_info_anzeigen(p1, p2):
     
     pygame.display.flip()
     
-    # Warten auf ENTER
+    # Warten auf ENTER oder Gamepad
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -1185,6 +1607,15 @@ def match_info_anzeigen(p1, p2):
                 if event.key == pygame.K_RETURN:
                     return
                 elif event.key == pygame.K_ESCAPE:
+                    return
+            
+            # Gamepad-Steuerung
+            button_event = gamepad_button_gedrueckt(event)
+            if button_event:
+                gamepad_index, button = button_event
+                if button == 0:  # A/X = Starten
+                    return
+                elif button == 1 or button == 6:  # B/Circle oder Select = Abbrechen
                     return
         uhr.tick(60)
 
@@ -1214,7 +1645,7 @@ def liga_tabelle_anzeigen(punkte):
     
     pygame.display.flip()
     
-    # Warten auf ENTER
+    # Warten auf ENTER oder Gamepad
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -1222,6 +1653,13 @@ def liga_tabelle_anzeigen(punkte):
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
+                    return
+            
+            # Gamepad-Steuerung
+            button_event = gamepad_button_gedrueckt(event)
+            if button_event:
+                gamepad_index, button = button_event
+                if button == 0:  # A/X = Fortfahren
                     return
         uhr.tick(60)
 
@@ -1233,7 +1671,7 @@ def liga_ende_anzeigen():
     bildschirm.fill(SCHWARZ)
     
     text_ende = font_gross.render("Liga beendet!", True, WEISS)
-    text_anweisung = font_klein.render("Drücke ENTER zum Hauptmenü", True, WEISS)
+    text_anweisung = font_klein.render("ENTER oder A-Button: Hauptmenü", True, WEISS)
     
     ende_rect = text_ende.get_rect(center=(BREITE//2, HOEHE//2 - 50))
     anweisung_rect = text_anweisung.get_rect(center=(BREITE//2, HOEHE//2 + 50))
@@ -1243,7 +1681,7 @@ def liga_ende_anzeigen():
     
     pygame.display.flip()
     
-    # Warten auf ENTER
+    # Warten auf ENTER oder Gamepad
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -1251,7 +1689,43 @@ def liga_ende_anzeigen():
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     return
+            
+            # Gamepad-Steuerung
+            button_event = gamepad_button_gedrueckt(event)
+            if button_event:
+                gamepad_index, button = button_event
+                if button == 0:  # A/X = Hauptmenü
+                    return
         uhr.tick(60)
+
+def gamepads_automatisch_erkennen():
+    """Erkennt automatisch angeschlossene Gamepads und weist sie zu"""
+    pygame.joystick.quit()
+    pygame.joystick.init()
+    anzahl = pygame.joystick.get_count()
+    
+    if anzahl == 0:
+        print("Keine Gamepads gefunden.")
+        return
+    
+    print(f"{anzahl} Gamepad(s) gefunden:")
+    pads = []
+    for i in range(anzahl):
+        pad = pygame.joystick.Joystick(i)
+        pad.init()
+        pads.append(pad)
+        print(f"  - Gamepad {i}: {pad.get_name()}")
+    
+    # Automatische Zuweisung: Erstes Gamepad = Links, Zweites = Rechts
+    if anzahl >= 1:
+        GAMEPADS['links'] = pads[0]
+        print(f"Gamepad 0 ({pads[0].get_name()}) wurde Team Links zugewiesen.")
+    if anzahl >= 2:
+        GAMEPADS['rechts'] = pads[1]
+        print(f"Gamepad 1 ({pads[1].get_name()}) wurde Team Rechts zugewiesen.")
+    elif anzahl == 1:
+        print("Hinweis: Nur ein Gamepad gefunden. Für Multiplayer benötigen Sie zwei Gamepads.")
+        print("         Oder verwenden Sie die Tastatur für einen Spieler.")
 
 if __name__ == "__main__":
     # Notfall-Beenden mit Ctrl+C
@@ -1260,6 +1734,9 @@ if __name__ == "__main__":
         print("\nNotfall-Beenden mit Ctrl+C")
         spiel_beenden()
     signal.signal(signal.SIGINT, signal_handler)
+    
+    # Gamepads automatisch erkennen beim Start
+    gamepads_automatisch_erkennen()
     
     while True:
         modus = hauptmenue()
