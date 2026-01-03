@@ -1,5 +1,26 @@
 # PyPonger Changelog
 
+## Version 0.13 (2026-01-03)
+
+### Neue Features
+- **Vollständige Gamepad-Steuerung für alle Menüs** - Alle Hauptmenü-, Pause- und Dialog-Funktionen können jetzt über Gamepad gesteuert werden
+- **Erweiterte Gamepad-Unterstützung** - Unterstützung für Joystick-Achsen, D-Pad und Buttons
+- **Automatische Gamepad-Erkennung** - Gamepads werden beim Start automatisch erkannt und zugewiesen
+- **Verbesserte Gamepad-Steuerung** - Deadzone für analoge Sticks, Unterstützung für verschiedene Gamepad-Layouts (Xbox, PlayStation, generische Controller)
+- **Gamepad-Navigation in allen Menüs** - Hauptmenü, Pause, Sicherheitsabfrage, Spiel-Ende, Liga-Modus und Einstellungen vollständig über Gamepad steuerbar
+
+### Technische Details
+- **Gamepad-Button-Mapping:**
+  - Button 0 (A/X) = Bestätigen/Auswahl
+  - Button 1 (B/Circle) = Abbrechen/Beenden
+  - Button 2 (X/Square) = Alternative Funktionen
+  - Button 3 (Y/Triangle) = Wechseln
+  - Button 6 (Select/Back) = ESC-Funktion
+  - Button 7 (Start) = Pause
+- **D-Pad Navigation** in allen Menüs
+- **Joystick-Achsen** mit Deadzone (0.2) für präzise Steuerung
+- **Fallback-Mechanismen** für Gamepads ohne bestimmte Features
+
 ## Version 0.12 (2025-09-04)
 
 ### Neue Features
